@@ -1,5 +1,6 @@
 /* CSS file */
 
+@namespace mx "library://ns.adobe.com/flex/mx";
 global
 {
 	color: #353535;
@@ -18,28 +19,28 @@ global
 	fontWeight: bold;
 }
 
-Button
+mx|Button
 {
 	themeColor: #A2FF00;
 	
 }
-List
+mx|List
 {
 	selectionColor: #A2FF00;
 	rollOverColor: #DCFF9E;
 }
 
-DataGrid
+mx|DataGrid
 {
 	selectionColor: #A2FF00;
 	rollOverColor: #DCFF9E;
 }
 
-TextInput
+mx|TextInput
 {
 }
 
-Tree
+mx|Tree
 {
 	folderClosedIcon: Embed(source="assets/bullet_green.png");
 	folderOpenIcon: Embed(source="assets/bullet_green.png");

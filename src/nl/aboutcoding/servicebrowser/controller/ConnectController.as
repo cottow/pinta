@@ -35,9 +35,10 @@ package nl.aboutcoding.servicebrowser.controller
 			saveProfiles();
 		}
 		
-		private function loadProfiles():void
+		public function loadProfiles(prefsFile:File=null):void
 		{
-			var prefsFile:File = File.applicationStorageDirectory.resolvePath(fileName);
+			if(prefsFile == null)
+				prefsFile = File.applicationStorageDirectory.resolvePath(fileName);
 			var fs:FileStream = new FileStream();
 			if( !prefsFile.exists )
 			{
@@ -53,9 +54,10 @@ package nl.aboutcoding.servicebrowser.controller
 			}
 		}
 		
-		public function saveProfiles():void
+		public function saveProfiles(prefsFile:File=null):void
 		{
-			var prefsFile:File = File.applicationStorageDirectory.resolvePath(fileName);		
+			if(prefsFile == null)
+				prefsFile = File.applicationStorageDirectory.resolvePath(fileName);		
 			var fs:FileStream = new FileStream();
 			try {
 				fs.open( prefsFile, FileMode.WRITE );
@@ -84,5 +86,12 @@ package nl.aboutcoding.servicebrowser.controller
 			connector.connect( p );
 		}
 
+		private static var _instance:ConnectController;
+		public static function getInstance():ConnectController
+		{
+			if(_instance == null)
+				_instance = new ConnectController();
+			return _instance;
+		}
 	}
 }

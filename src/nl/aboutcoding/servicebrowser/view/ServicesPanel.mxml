@@ -10,7 +10,7 @@
 			<mx:DataGridColumn headerText="Services" dataField="name"/>
 		</mx:columns>
 	</mx:DataGrid>
-	<mx:DataGrid height="180" left="197" top="10" width="179" 
+	<mx:DataGrid height="180" left="197" top="10" width="179" right="10"
 		id="methodList"
 		itemClick="onMethodClick(event)"
 		itemEditEnd="onEditEnd(event)"
@@ -24,6 +24,13 @@
 		<mx:columns>
 			<mx:DataGridColumn headerText="Arguments" dataField="name"/>
 			<mx:DataGridColumn headerText="Default values" dataField="value"/>
+			<mx:DataGridColumn headerText="Use JSON" editorDataField="selected" dataField="useJSON">
+				<mx:itemEditor>
+					<mx:Component>
+						<mx:CheckBox paddingLeft="15"/>
+					</mx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
 		</mx:columns>
 	</mx:DataGrid>
 	<mx:Button icon="@Embed(source='assets/add.png')" id="addMethodBtn" left="197" top="200" enabled="{activeService!=null}" click="onMethodAdd(event)"/>
@@ -37,15 +44,11 @@
 	<mx:Script>
 		<![CDATA[
 			import nl.aboutcoding.servicebrowser.events.StatusChangeEvent;
-			import mx.events.StateChangeEvent;
 			import mx.core.IFlexDisplayObject;
 			import mx.managers.PopUpManager;
-			import nl.aboutcoding.servicebrowser.model.Profile;
 			import nl.aboutcoding.servicebrowser.model.RArgument;
 			import nl.aboutcoding.servicebrowser.model.RMethod;
 			import mx.events.FlexEvent;
-			import mx.utils.ObjectUtil;
-			import mx.controls.Alert;
 			import mx.events.DataGridEvent;
 			import nl.aboutcoding.servicebrowser.events.ProfileModifiedEvent;
 			import nl.aboutcoding.servicebrowser.controller.EventHub;

@@ -9,12 +9,15 @@ package nl.aboutcoding.servicebrowser.model
 		public var type:String;
 		[Bindable]
 		public var value:String;
+		[Bindable]
+		public var useJSON:Boolean;
 		
-		public function RArgument( name:String='new', type:String='String', value:String='' )
+		public function RArgument( name:String='new', type:String='String', value:String='', useJSON:Boolean=false)
 		{
 			this.name = name;
 			this.type = type;
 			this.value = value;
+			this.useJSON = useJSON;
 		}
 
 	}
