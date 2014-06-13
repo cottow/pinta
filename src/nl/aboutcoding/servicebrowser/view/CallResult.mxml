@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" creationComplete="init()">
+	<mx:HBox horizontalGap="8" paddingLeft="20" paddingBottom="0">
+		<mx:RadioButtonGroup id="outputSelect"/>
+		<mx:RadioButton label="Tree" groupName="outputSelect" selected="true" click="toggleOutput('tree')"/>
+		<mx:RadioButton label="Text" groupName="outputSelect"  selected="false" click="toggleOutput('text')"/>
+		<mx:RadioButton label="Debug" groupName="outputSelect"  selected="false" click="toggleOutput('info')"/>
+	</mx:HBox>
+	<mx:Canvas width="100%" height="100%" id="outputCanvas">
+		<mx:TextArea id="textOutput" width="100%" height="100%" visible="false"/>
+		<mx:Tree dataProvider="{resultTree}" id="treeOutput" width="100%" height="100%" visible="true"></mx:Tree>
+		<mx:TextArea id="debugOutput" width="100%" height="100%" visible="false"/>
+	</mx:Canvas>
+
+	<mx:Script>
+		<![CDATA[
+			import mx.rpc.events.ResultEvent;
+			import flash.utils.getQualifiedClassName;
+			import mx.utils.ArrayUtil;
+			import mx.controls.Alert;
+			import mx.collections.ArrayCollection;
+			import mx.utils.ObjectUtil;
+			
+			[Bindable]
+			private var resultData:Object;
+			
+			[Bindable]
+			private var resultTree:Array;
+			
+			[Bindable]
+			private var resultInfo:Event;
+			
+			[Bindable]
+			private var resultXML:XMLList;
+			
+			private function init():void
+			{
+				dataRefresh();					
+			}
+			
+			public function setData( obj:Object, ev:Event ):void
+			{
+				resultData = obj;
+				resultInfo = ev;
+			}
+			
+			public function dataRefresh():void
+			{
+				// text output
+				textOutput.text = ObjectUtil.toString( resultData );
+				
+				// debug output
+				debugOutput.text = ObjectUtil.toString( resultInfo );
+
+				// tree output
+				if( resultData == null )
+				{
+					resultTree = new Array( new String('null'));
+				} else if( isSimpleType( resultData ) )
+				{
+					resultTree = new Array( new String(resultData) );
+				} else {
+					if( getQualifiedClassName( resultData ) == 'mx.rpc::Fault' )
+					{
+						var err:Object = new Object();
+						err.label = 'Error';
+						var dscr:Object = new Object();
+						dscr.label = resultData.faultString as String;
+						err.children = new Array( dscr );
+						resultTree = new Array( err );	
+					} else {
+						if( getQualifiedClassName( resultData ) == 'Array' )
+						{
+							resultTree = makeTree( resultData as Array );
+						} else {
+							resultTree = makeTree( new Array( resultData ) );
+						}
+						
+						resultTree = enumerateTree( resultTree );
+					}
+				}
+			}
+			
+			private function isSimpleType( data:Object ):Boolean
+			{
+				var simple:ArrayCollection = new ArrayCollection(['int','boolean','string']);
+				return simple.contains(String(getQualifiedClassName( data )).toLowerCase() )
+			}
+			
+			private function enumerateTree( data:Array ):Array
+			{
+				var n:int = 0;
+				var a:Array = new Array();
+				for each( var o:Object in data )
+				{
+					o.label = '('+n+') '+o.label; 
+					if( o.hasOwnProperty('children') )
+					{
+						o.children = enumerateTree( o.children );
+					}
+					a.push( o );
+					n++;
+				}
+				return data;	
+			}
+			
+			private function makeTree( source:Array ):Array
+			{
+				var n:Array = new Array();
+				for each( var o:Object in source )
+				{
+					n.push( decorateNode( o ) );
+				}
+				return n;
+			}
+			
+			private function decorateNode( o:Object ):Object
+			{
+				var n:Object = new Object();
+				
+				// leaf?
+				if( !o.hasOwnProperty('label' ) && getQualifiedClassName(o) != 'Array' )
+				{
+					var numprops:int = 0;
+					for ( var p:Object in o )
+					{
+						numprops++;
+					}
+					if( numprops > 0 )
+						n.children = propsToChildren( o );
+					
+					n.label = getQualifiedClassName(o);
+					if( o.toString().charAt(0) != '[' )
+					{
+						n.label += ": "+String(o);
+					}
+					return n;
+				} else if( getQualifiedClassName(o) == 'Array' ) {
+					// branch?
+					if( o.hasOwnProperty('label') )
+					{
+						n.label = o.label;
+					} else {
+						n.label = '(array)';
+					}
+					n.children = makeTree(o as Array );
+				} else if( o.hasOwnProperty('label') ) {
+					return o;
+				}
+				
+				return n;
+			}
+			
+			private function propsToChildren( obj:Object ):Array
+			{
+				var ret:Array = new Array();
+				var o:Object;
+				for ( var prop:Object in obj )
+				{
+					o = new Object();
+					o.label = String(prop) + " = " + obj[prop];
+					ret.push( o );
+				}
+				
+				return ret;				
+			}
+			
+			private function toggleOutput( t:String ):void
+			{
+				if( t == 'tree' )
+				{
+					treeOutput.visible = true;
+					textOutput.visible = false;
+					debugOutput.visible = false;
+				} else if( t == 'text' ) {
+					treeOutput.visible = false;
+					textOutput.visible = true;
+					debugOutput.visible = false;
+				} else {
+					treeOutput.visible = false;
+					textOutput.visible = false;
+					debugOutput.visible = true;
+				}
+			}
+			
+		]]>
+	</mx:Script>
+</mx:VBox>

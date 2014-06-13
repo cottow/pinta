@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:WindowedApplication 
+		xmlns:comp="nl.aboutcoding.servicebrowser.view.*" 
+		xmlns:mx="http://www.adobe.com/2006/mxml" 
+		layout="absolute" 
+		width="835" 
+		height="661" 
+		creationComplete="init()" 
+		verticalAlign="middle" 
+		horizontalAlign="center" 
+		borderColor="#000000" 
+		backgroundGradientAlphas="[1.0, 1.0]" 
+		backgroundGradientColors="[#2B2B2B, #757575]" 
+		borderStyle="none" 
+		showTitleBar="false" 
+		showStatusBar="false" 
+		currentState="Connect" minHeight="675" minWidth="837" 
+		>
+	<mx:states>
+		<mx:State name="Connect">
+			<mx:SetProperty target="{panel1}" name="visible" value="false"/>
+			<mx:AddChild position="lastChild">
+				<comp:ConnectPanel/>
+			</mx:AddChild>
+			<mx:SetProperty target="{applicationcontrolbar1}" name="visible" value="false"/>
+			<mx:SetStyle name="themeColor" value="#A2FF00"/>
+			<mx:SetProperty target="{callpanel1}" name="visible" value="false"/>
+			<mx:SetStyle name="backgroundImage"/>
+			
+		</mx:State>
+		<mx:State name="OutputMax">
+			<mx:SetProperty target="{panel1}" name="visible" value="false"/>
+			<mx:SetProperty target="{callpanel1}" name="height"/>
+			<mx:SetProperty target="{callpanel1}" name="y"/>
+			<mx:SetStyle target="{callpanel1}" name="bottom" value="10"/>
+			<mx:SetProperty target="{callpanel1}" name="x"/>
+			<mx:SetStyle target="{callpanel1}" name="right" value="10"/>
+			<mx:SetProperty target="{callpanel1}" name="width"/>
+			<mx:SetStyle target="{callpanel1}" name="left" value="10"/>
+			<mx:SetStyle target="{callpanel1}" name="top" value="73"/>
+			<mx:SetStyle target="{button1}" name="icon" value="@Embed(source='assets/bullet_arrow_down.png')"/>
+		</mx:State>
+	</mx:states>
+	<comp:ServicesPanel layout="absolute" left="10" top="73" styleName="lightTitle" id="panel1" minWidth="817" minHeight="273" title="Services and Methods" right="10" height="273"></comp:ServicesPanel>
+	<mx:ApplicationControlBar height="55" id="applicationcontrolbar1" left="10" top="10" right="10">
+		<mx:Button label="Quit" labelPlacement="bottom" icon="@Embed(source='assets/stop.png')" paddingTop="5" click="onQuitClick(event)"/>
+		<mx:Button label="Gateways" icon="@Embed(source='assets/connect.png')" labelPlacement="bottom" paddingTop="5" click="onConnectClick(event)"/>
+		<mx:VRule width="2" height="44"/>
+		<mx:Button label="Output" labelPlacement="bottom" icon="@Embed(source='assets/bullet_arrow_up.png')" paddingTop="5" click="toggleOutputWindow()" id="button1"/>
+		<mx:VRule width="2" height="44"/>
+	</mx:ApplicationControlBar>
+	<comp:CallPanel id="callpanel1" bottom="10" right="10" left="10" top="354"></comp:CallPanel>
+	
+	<mx:transitions>
+	    <mx:Transition id="myTransition" fromState="" toState="OutputMax">
+	    	<mx:Parallel target="{callpanel1}">
+	    		<mx:Move duration="400"/>
+	    		<mx:Resize duration="400"/>
+	    	</mx:Parallel>
+	    </mx:Transition>
+	    <mx:Transition id="second" fromState="OutputMax" toState="">
+	    	<mx:Parallel target="{callpanel1}">
+	    		<mx:Move duration="400"/>
+	    		<mx:Resize duration="400"/>
+	    	</mx:Parallel>
+	    </mx:Transition>
+	</mx:transitions>
+	
+	<mx:Style source="style.css"/>
+	
+	<mx:Script>
+		<![CDATA[
+			import air.update.events.UpdateEvent;
+			import air.update.ApplicationUpdaterUI;
+			import gs.TweenLite;
+			import mx.effects.Tween;
+			import nl.aboutcoding.servicebrowser.events.StatusChangeEvent;
+			import mx.events.ListEvent;
+			import nl.aboutcoding.servicebrowser.model.RMethod;
+			import mx.controls.Alert;
+			import mx.events.CollectionEvent;
+			import nl.aboutcoding.servicebrowser.business.Connector;
+			import nl.aboutcoding.servicebrowser.controller.EventHub;
+			import nl.aboutcoding.servicebrowser.model.ServiceInfo;
+			
+			[Bindable]
+			private var serviceInfo:ServiceInfo;
+			private var eventHub:EventHub;
+			private var connector:Connector;
+			
+			[Bindable]
+			private var selectedMethod:RMethod;
+			private var appUpdater:ApplicationUpdaterUI = new ApplicationUpdaterUI();
+
+			
+			public function init():void
+			{
+				serviceInfo = ServiceInfo.getInstance();
+				eventHub = EventHub.getInstance();
+				connector = Connector.getInstance();
+				setApplicationVersion();
+				
+				eventHub.addEventListener( StatusChangeEvent.CONNECTED, onConnect );
+				eventHub.addEventListener( StatusChangeEvent.QUIT, onQuit );
+
+				checkForUpdate();
+			}
+			
+			private function checkForUpdate():void {
+			    setApplicationVersion(); // Find the current version so we can show it below
+			    appUpdater.updateURL = "http://drainbamage.nl/pinta/update.xml"; // Server-side XML file describing update
+			    appUpdater.isCheckForUpdateVisible = false; // We won't ask permission to check for an update
+			    appUpdater.addEventListener(UpdateEvent.INITIALIZED, onUpdate); // Once initialized, run onUpdate
+			    appUpdater.addEventListener(ErrorEvent.ERROR, onError); // If something goes wrong, run onError
+			    appUpdater.initialize(); // Initialize the update framework
+			}
+			
+			private function onError(event:ErrorEvent):void {
+			    Alert.show(event.toString());
+			}
+			
+			private function onUpdate(event:UpdateEvent):void {
+			    appUpdater.checkNow(); // Go check for an update now
+			}
+			
+			// Find the current version for our Label below
+			private function setApplicationVersion():void {
+			    var appXML:XML = NativeApplication.nativeApplication.applicationDescriptor;
+			    var ns:Namespace = appXML.namespace();
+			    ver.text = "Pinta " + appXML.ns::version;
+			}
+			
+			private function onQuit( event:StatusChangeEvent ):void
+			{
+				nativeApplication.exit();
+			}
+			
+			private function onConnect( event:StatusChangeEvent ):void
+			{
+				this.currentState = '';
+			}
+			
+			private function onQuitClick( event:MouseEvent):void
+			{
+				eventHub.dispatchEvent( new StatusChangeEvent( StatusChangeEvent.QUIT ) );
+			}
+			
+			private function onConnectClick( event:MouseEvent ):void
+			{
+				eventHub.dispatchEvent( new StatusChangeEvent( StatusChangeEvent.DISCONNECTED ) );
+				this.currentState = 'Connect';
+			}
+			
+			private function toggleOutputWindow():void
+			{
+				if( currentState == '' )
+				{
+					currentState = 'OutputMax';
+				} else {
+					currentState = '';
+				}
+			}
+			
+		]]>
+	</mx:Script>
+	<mx:Label text="Pinta version " x="726" y="32" color="#D5D5D5" id="ver"/>
+</mx:WindowedApplication>

@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="init()" title="Methods and services">
+	<mx:DataGrid height="180" width="179" left="10" top="10" 
+		id="serviceList"
+		itemClick="onServiceClick(event)"
+		itemEditEnd="onEditEnd(event)"
+		dataProvider="{serviceInfo.activeProfile.services}" 
+		editable="true">
+		<mx:columns>
+			<mx:DataGridColumn headerText="Services" dataField="name"/>
+		</mx:columns>
+	</mx:DataGrid>
+	<mx:DataGrid height="180" left="197" top="10" width="179" 
+		id="methodList"
+		itemClick="onMethodClick(event)"
+		itemEditEnd="onEditEnd(event)"
+		dataProvider="{activeService.methods}" 
+		editable="true">
+		<mx:columns>
+			<mx:DataGridColumn headerText="Methods" dataField="name"/>
+		</mx:columns>
+	</mx:DataGrid>
+	<mx:DataGrid top="10" id="argumentsGrid" dataProvider="{activeMethod.arguments}" left="384" width="386" height="180" editable="true">
+		<mx:columns>
+			<mx:DataGridColumn headerText="Arguments" dataField="name"/>
+			<mx:DataGridColumn headerText="Default values" dataField="value"/>
+		</mx:columns>
+	</mx:DataGrid>
+	<mx:Button icon="@Embed(source='assets/add.png')" id="addMethodBtn" left="197" top="200" enabled="{activeService!=null}" click="onMethodAdd(event)"/>
+	<mx:Button icon="@Embed(source='assets/add.png')" id="addArgBtn" left="384" top="201" enabled="{activeMethod!=null}" click="onArgumentAdd(event)"/>
+	<mx:Button x="106" y="201" icon="@Embed(source='../../../../assets/cog_add.png')" id="discoverBtn" click="discoverClick(event)"/>
+	<mx:Button icon="@Embed(source='assets/add.png')" id="addServiceBtn" left="10" top="201" click="onAddServiceClick(event)"/>
+	<mx:Button icon="@Embed(source='assets/delete.png')" id="deleteMethodBtn" left="245" top="200" enabled="{methodList.selectedIndex>=0}" click="onMethodDelete(event)"/>
+	<mx:Button icon="@Embed(source='assets/delete.png')" id="deleteArgBtn" left="432" top="201" enabled="{argumentsGrid.selectedIndex>=0}" click="onArgumentDelete(event)"/>
+	<mx:Button icon="@Embed(source='assets/delete.png')" id="deleteServiceBtn" left="58" top="201" enabled="{serviceList.selectedIndex>=0}" click="onDeleteServiceClick(event)"/>
+
+	<mx:Script>
+		<![CDATA[
+			import nl.aboutcoding.servicebrowser.events.StatusChangeEvent;
+			import mx.events.StateChangeEvent;
+			import mx.core.IFlexDisplayObject;
+			import mx.managers.PopUpManager;
+			import nl.aboutcoding.servicebrowser.model.Profile;
+			import nl.aboutcoding.servicebrowser.model.RArgument;
+			import nl.aboutcoding.servicebrowser.model.RMethod;
+			import mx.events.FlexEvent;
+			import mx.utils.ObjectUtil;
+			import mx.controls.Alert;
+			import mx.events.DataGridEvent;
+			import nl.aboutcoding.servicebrowser.events.ProfileModifiedEvent;
+			import nl.aboutcoding.servicebrowser.controller.EventHub;
+			import nl.aboutcoding.servicebrowser.model.RService;
+			import mx.events.ListEvent;
+			import nl.aboutcoding.servicebrowser.model.ServiceInfo;
+			
+			[Bindable]
+			private var serviceInfo:ServiceInfo = ServiceInfo.getInstance();
+			private var eventHub:EventHub = EventHub.getInstance();
+			
+			[Bindable]
+			public var activeService:RService;
+			[Bindable]
+			public var activeMethod:RMethod;
+			
+			private var discoverPopup:IFlexDisplayObject;
+			
+			private function init():void
+			{
+				eventHub.addEventListener( StatusChangeEvent.RESET, onReset );
+				eventHub.addEventListener( StatusChangeEvent.CONNECTING, onConnecting );
+			}
+
+			private function onConnecting( event:StatusChangeEvent ):void
+			{
+				this.activeService = null;
+				this.activeMethod = null;
+			}
+			
+			private function onReset( event:StatusChangeEvent ):void
+			{
+				activeMethod = null;
+				activeService = null;
+			}
+			
+			private function discoverClick( event:MouseEvent ):void
+			{
+				discoverPopup = PopUpManager.createPopUp( this, DiscoverWindow, true );
+				discoverPopup.x = (stage.stageWidth/2)-(discoverPopup.width/2);
+				discoverPopup.y = 75;
+			}
+			
+			private function onAddServiceClick( event:MouseEvent ):void
+			{
+				var s:RService = new RService();
+				serviceInfo.activeProfile.services.addItem( s );
+				eventHub.dispatchEvent( new ProfileModifiedEvent( ProfileModifiedEvent.CHANGED ) );	
+			}
+			
+			private function onDeleteServiceClick( event:MouseEvent ):void
+			{
+				if( serviceList.selectedIndex < 0 )
+				{
+					return;	
+				}	
+				
+				var s:RService = RService( serviceInfo.activeProfile.services.getItemAt( serviceList.selectedIndex ) );
+				serviceInfo.activeProfile.services.removeItemAt( serviceList.selectedIndex );
+				if( activeService == s )
+				{
+					activeService = null;
+				}
+			}
+			
+			private function onEditEnd( event:Event ):void
+			{
+				var t:Timer = new Timer(500,0);
+				t.addEventListener(TimerEvent.TIMER, function():void {
+					serviceInfo.dataChanged();
+				});
+				t.start();
+			}
+			
+			private function onServiceClick( event:ListEvent ):void
+			{
+				activeService = RService( serviceList.selectedItem );
+			}
+			
+			private function onMethodAdd( event:MouseEvent ):void
+			{
+				var m:RMethod = new RMethod();
+				activeService.methods.addItem( m );
+			}
+			
+			private function onMethodDelete( event:MouseEvent ):void
+			{
+				if( methodList.selectedIndex < 0 )
+					return;
+				
+				var m:RMethod = RMethod( activeService.methods.getItemAt( methodList.selectedIndex ) );
+				activeService.methods.removeItemAt( methodList.selectedIndex );
+				if( activeMethod == m )
+				{
+					activeMethod = null;
+				}
+			}
+			
+			private function onMethodClick( event:ListEvent ):void
+			{
+				activeMethod = RMethod( methodList.selectedItem );
+			}
+			
+			private function onMethodChange( event:Event ):void
+			{
+				var t:Timer = new Timer(500,0);
+				t.addEventListener(TimerEvent.TIMER, function():void {
+					serviceInfo.dataChanged();
+				});
+				t.start();
+			}
+			
+			private function onArgumentClick( event:ListEvent):void
+			{
+
+			}
+			
+			private function onArgumentAdd( event:MouseEvent ):void
+			{
+				activeMethod.arguments.addItem( new RArgument() );
+			}
+			
+			private function onArgumentDelete( event:MouseEvent ):void
+			{
+				if( argumentsGrid.selectedIndex < 0 )
+					return;
+				activeMethod.arguments.removeItemAt( argumentsGrid.selectedIndex );
+			}
+			
+		]]>
+	</mx:Script>		
+</mx:Panel>

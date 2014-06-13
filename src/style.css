@@ -1,0 +1,47 @@
+/* CSS file */
+
+global
+{
+	color: #353535;
+	themeColor: #A2FF00;	
+}
+
+.lightTitle
+{
+	color: #222222;
+}
+
+.appTitle
+{
+	color: #222222;
+	fontSize: 25px;
+	fontWeight: bold;
+}
+
+Button
+{
+	themeColor: #A2FF00;
+	
+}
+List
+{
+	selectionColor: #A2FF00;
+	rollOverColor: #DCFF9E;
+}
+
+DataGrid
+{
+	selectionColor: #A2FF00;
+	rollOverColor: #DCFF9E;
+}
+
+TextInput
+{
+}
+
+Tree
+{
+	folderClosedIcon: Embed(source="assets/bullet_green.png");
+	folderOpenIcon: Embed(source="assets/bullet_green.png");
+	defaultLeafIcon: Embed(source="assets/bullet_black.png");
+}

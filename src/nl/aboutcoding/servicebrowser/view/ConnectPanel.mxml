@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel height="282" layout="absolute" xmlns:mx="http://www.adobe.com/2006/mxml" 
+	title="Gateways" 
+	styleName="lightTitle" 
+	width="638" 
+	horizontalCenter="0" 
+	top="141"
+	creationComplete="init()">
+	
+	<mx:List x="10" y="10" id="profileList" width="162" height="195" 
+		dataProvider="{controller.profiles}" 
+		itemClick="onProfileSelect(event)">
+		<mx:itemRenderer>
+			<mx:Component>
+				<mx:Label text="{data.name}"/>
+			</mx:Component>
+		</mx:itemRenderer>
+	</mx:List>
+	<mx:Button x="10" y="210" label="" icon="@Embed(source='assets/add.png')" fontWeight="bold" click="onAddClick(event)"/>
+	<mx:Button x="58" y="210" label="" icon="@Embed(source='assets/delete.png')" fontWeight="bold" click="onDeleteClick(event)" enabled="{profileList.selectedIndex >= 0 }"/>
+
+	<mx:Canvas id="formCanvas" x="180" y="10" enabled="{selectedProfile!=null}" width="404">
+		<mx:TextInput x="85" y="0" id="nameText" change="selectedProfile.name = nameText.text;" text="{selectedProfile.name}"/>
+		<mx:TextInput x="85" y="41" width="309" id="urlText" change="selectedProfile.url = urlText.text;" text="{selectedProfile.url}"/>
+		<mx:TextInput x="85" y="71" id="userText" change="selectedProfile.user = userText.text;" text="{selectedProfile.user}" enabled="false"/>
+		<mx:TextInput x="85" y="125" visible="false"  id="destText" change="selectedProfile.serviceDest = destText.text;" text="{selectedProfile.serviceDest}"/>
+		<mx:TextInput x="85" y="97" id="passwordText" change="selectedProfile.password = passwordText.text;" text="{selectedProfile.password}" displayAsPassword="true" enabled="false"/>
+		<mx:Label x="25" y="2" text="Name" fontWeight="bold"/>
+		<mx:Label x="35" y="43" text="URL"/>
+		<mx:Label x="0" y="73" text="Username"/>
+		<mx:Label x="6" y="99" text="Password"/>
+		<mx:Label x="6" y="129" visible="false" text="Destination"/>
+		<mx:Button x="238" y="190" label="Use" click="onConnectClick(event)" enabled="{profileList.selectedIndex >= 0 }" icon="@Embed(source='../../../../assets/connect.png')"/>
+	</mx:Canvas>
+	<mx:Button x="530" y="200" label="Quit" icon="@Embed(source='../../../../assets/stop.png')" click="onQuitClick(event)"/>
+	
+	<mx:Script>
+		<![CDATA[
+			import nl.aboutcoding.servicebrowser.events.StatusChangeEvent;
+			import nl.aboutcoding.servicebrowser.controller.EventHub;
+			import nl.aboutcoding.servicebrowser.model.ServiceInfo;
+			import mx.utils.ObjectUtil;
+			import mx.controls.Alert;
+			import nl.aboutcoding.servicebrowser.model.Profile;
+			import mx.events.ListEvent;
+			import nl.aboutcoding.servicebrowser.controller.ConnectController;
+			
+			[Bindable]
+			private var controller:ConnectController;
+			[Bindable]
+			private var selectedProfile:Profile;
+			
+			private var urlRegex:RegExp = /(((http|https):\/\/)([-a-z0-9]*\.+)?[a-zA-Z0-9\.])([\/&\?=\.;%\+\$@~][\S]*)?/i;
+			
+			private function init():void
+			{
+				controller = new ConnectController();
+			}
+			
+			private function onAddClick( event:MouseEvent ):void
+			{
+				controller.addProfile();
+				profileList.selectedIndex = controller.profiles.length-1;
+				onProfileSelect(null);
+			}
+			
+			private function onDeleteClick( event:MouseEvent ):void
+			{
+				if( profileList.selectedIndex >= 0 )
+					controller.deleteProfile( profileList.selectedIndex );
+			}
+			
+			private function onProfileSelect( event:ListEvent ):void
+			{
+				selectedProfile = Profile(profileList.selectedItem);
+			}
+			
+			private function onConnectClick( event:MouseEvent ):void
+			{
+				controller.saveProfiles();
+				var p:Profile = Profile(profileList.selectedItem);
+				
+				if( urlRegex.test( p.url ) )
+					controller.connect( Profile( profileList.selectedItem ) );
+				else 
+					Alert.show("You did not enter a valid URL, cannot connect", "Error");
+			}
+			
+			private function onQuitClick( event:MouseEvent):void
+			{
+				EventHub.getInstance().dispatchEvent( new StatusChangeEvent( StatusChangeEvent.QUIT ) );
+			}			
+		]]>
+	</mx:Script>
+</mx:Panel>
