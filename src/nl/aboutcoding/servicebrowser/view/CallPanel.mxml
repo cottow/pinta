@@ -1,25 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
-<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" title="Calls" minWidth="800" minHeight="300" creationComplete="init()" xmlns:ns1="flexlib.containers.*">
-	<ns1:SuperTabNavigator id="outputTabs" right="10" top="10" bottom="38" left="252"></ns1:SuperTabNavigator>
-	<mx:Button label="Save" visible="false" labelPlacement="right" icon="@Embed(source='assets/page_save.png')" paddingTop="5" bottom="10" right="91.25"/>
-	<mx:Button label="Clear" labelPlacement="right" icon="@Embed(source='assets/page_white_text.png')" paddingTop="5" bottom="10" right="10.000015" click="onClearClick(event)"/>	
+<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml"
+		  xmlns:fxlib="flexlib.containers.*"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  minWidth="800" minHeight="300" creationComplete="init()" layout="absolute" title="Calls" >
+	<fxlib:SuperTabNavigator id="outputTabs" left="342" right="10" top="10" bottom="38"
+						   change="onOutputTabsChange(event)"></fxlib:SuperTabNavigator>
+	<mx:Label id="lblStatus" visible="false" left="342" bottom="10" paddingTop="5"
+			  text="Call succeed in ### milliseconds"/>
 	
-	<mx:ComboBox x="84" y="10" id="serviceSelect"
-		prompt="Select a service"
-		dataProvider="{serviceInfo.activeProfile.services}" 
-		change="onServiceClick(event)" width="160"  labelField="name">
+	<mx:Button visible="true" right="91.25" bottom="10" label="Save"
+			   icon="@Embed(source='assets/page_save.png')" labelPlacement="right" paddingTop="5"
+			   id="saveResultBtn" click="saveResultBtn_clickHandler(event)"
+			   toolTip="Save service call result to a JSON text file..."/>
+	
+	<mx:Button right="10.000015" bottom="10" label="Clear" click="onClearClick(event)"
+			   icon="@Embed(source='assets/page_white_text.png')" labelPlacement="right"
+			   paddingTop="5"/>	
+	
+	<mx:ComboBox id="serviceSelect" x="84" y="10" width="250" change="onServiceClick(event)"
+				 dataProvider="{serviceInfo.activeProfile.services}" labelField="name"
+				 prompt="Select a service">
 		<mx:itemRenderer>
 			<mx:Component>
 				<mx:Label text="{data.name}"/>
 			</mx:Component>
 		</mx:itemRenderer>
 	</mx:ComboBox>
-
-	<mx:ComboBox x="84" y="40" id="methodSelect" 
-		dataProvider="{activeService.methods}" 
-		change="onMethodClick(event)"
-		enabled="{activeService!=null}"
-		width="160" prompt="Select a method" labelField="name">
+	
+	<mx:ComboBox id="methodSelect" x="84" y="40" width="250" change="onMethodClick(event)"
+				 dataProvider="{activeService.methods}" enabled="{activeService!=null}"
+				 labelField="name" prompt="Select a method">
 		<mx:itemRenderer>
 			<mx:Component>
 				<mx:Label text="{data.name}"/>
@@ -30,27 +40,38 @@
 	<mx:Label x="10" y="12" text="Service"/>
 	<mx:Label x="10" y="42" text="Method"/>
 	
-	<mx:DataGrid x="10" y="68" width="234" id="argumentsGrid" editable="true" dataProvider="{callMethod.arguments}" height="87">
+	<mx:DataGrid id="argumentsGrid" x="10" y="68" width="324" height="87"
+				 dataProvider="{callMethod.arguments}" editable="true">
 		<mx:columns>
-			<mx:DataGridColumn headerText="Argument" editable="false" dataField="name"/>
-			<mx:DataGridColumn headerText="Value *" editable="true" dataField="value"/>
+			<mx:DataGridColumn dataField="name" editable="false" headerText="Argument"/>
+			<mx:DataGridColumn dataField="value" editable="true" headerText="Value *"/>
+			<mx:DataGridColumn width="80" dataField="useJSON" editable="true"
+							   editorDataField="selected" headerText="Use JSON">
+				<mx:itemEditor>
+					<mx:Component>
+						<mx:CheckBox paddingLeft="15"/>
+					</mx:Component>
+				</mx:itemEditor>
+			</mx:DataGridColumn>
 		</mx:columns>
 	</mx:DataGrid>
-	<mx:Button label="Place AMF call" left="10" top="238" enabled="{methodSelect.selectedIndex>=0}" click="onCallClick(event)"/>
-		
+	<mx:Button left="10" top="238" label="Place AMF call" click="onCallClick(event)"
+			   enabled="{methodSelect.selectedIndex&gt;=0}"/>
+	
 	<mx:Script>
 		<![CDATA[
-			import nl.aboutcoding.servicebrowser.events.StatusChangeEvent;
-			import nl.aboutcoding.servicebrowser.controller.EventHub;
-			import nl.aboutcoding.servicebrowser.business.RResponder;
-			import mx.rpc.events.ResultEvent;
-			import mx.rpc.events.FaultEvent;
-			import nl.aboutcoding.servicebrowser.business.Connector;
-			import mx.controls.Alert;
-			import mx.utils.ObjectUtil;
+			import mx.events.IndexChangedEvent;
 			import mx.events.ListEvent;
-			import nl.aboutcoding.servicebrowser.model.RService;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.ObjectUtil;
+			
+			import nl.aboutcoding.servicebrowser.business.Connector;
+			import nl.aboutcoding.servicebrowser.business.RResponder;
+			import nl.aboutcoding.servicebrowser.controller.EventHub;
+			import nl.aboutcoding.servicebrowser.events.StatusChangeEvent;
 			import nl.aboutcoding.servicebrowser.model.RMethod;
+			import nl.aboutcoding.servicebrowser.model.RService;
 			import nl.aboutcoding.servicebrowser.model.ServiceInfo;
 			
 			[Bindable]
@@ -101,38 +122,70 @@
 				activeMethod = RMethod( activeService.methods.getItemAt( methodSelect.selectedIndex ) );
 				callMethod = RMethod( ObjectUtil.copy( activeMethod ) );
 			}
-			
+			private var _callTimeTracker:Number;
 			private function onCallClick( event:MouseEvent ):void
 			{
+				_callTimeTracker = (new Date()).time;
 				if( activeService != null && callMethod != null )
 				{
 					var r:RResponder = new RResponder( onSuccess, onFailure);
 					connector.call( activeService, callMethod, r );
 				}
 			}
+			private var _respondTimes:Object = {};
+			
+			private var callResult:CallResult;
 			
 			public function onSuccess( event:ResultEvent ):void
 			{
-				var r:CallResult = new CallResult();
-				r.setData( event.result, event );
-				outputTabs.addChild( r );
-				r.label = event.currentTarget.service.source+"."+event.currentTarget.name;
+				var timeEndTracker:Number=(new Date()).time;				
+				callResult = new CallResult();
+				callResult.setData( event.result, event );
+				if(outputTabs.getChildren().length > 10)
+					outputTabs.removeChildAt(0);
+				outputTabs.addChild( callResult );
+				callResult.label = event.currentTarget.service.source+"."+event.currentTarget.name;
 				outputTabs.selectedIndex = outputTabs.numChildren-1;
+				lblStatus.visible=true;	
+				
+				lblStatus.text = "Call finished in "+(timeEndTracker-_callTimeTracker) +" milliseconds";
+				_respondTimes[callResult.uid]=timeEndTracker-_callTimeTracker;
 			}
 			
 			public function onFailure( event:FaultEvent ):void
 			{
 				var r:CallResult = new CallResult();
 				r.setData( event.fault, event );
+				if(outputTabs.getChildren().length > 10)
+					outputTabs.removeChildAt(0);
 				outputTabs.addChild( r );
 				r.label = event.currentTarget.service.source+"."+event.currentTarget.name;
 				outputTabs.selectedIndex = outputTabs.numChildren-1;
+				lblStatus.visible=true;
+				lblStatus.text = "Call failed";
 			}
 			
 			private function onClearClick( event:MouseEvent ):void
 			{
-				outputTabs.removeAllChildren();	
+				outputTabs.removeAllChildren();
+				_respondTimes = {};
 			}
+			
+			protected function onOutputTabsChange(event:IndexChangedEvent):void
+			{
+				callResult = outputTabs.getChildAt(event.newIndex) as CallResult;
+				lblStatus.text = "Call finished in "+_respondTimes[callResult.uid]+" milliseconds";
+			}
+			
+			protected function saveResultBtn_clickHandler(event:MouseEvent):void
+			{
+				if(callResult != null)
+				{
+					var file:File = new File();
+					file.save(callResult.getResultJSON(),callResult.label + ".json");
+				}
+			}
+			
 		]]>
 	</mx:Script>
 	<mx:Label x="10" y="163" text="* Use JSON notation to send Objects"/>

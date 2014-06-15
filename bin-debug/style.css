@@ -1,0 +1,48 @@
+/* CSS file */
+
+@namespace mx "library://ns.adobe.com/flex/mx";
+global
+{
+	color: #353535;
+	themeColor: #A2FF00;	
+}
+
+.lightTitle
+{
+	color: #222222;
+}
+
+.appTitle
+{
+	color: #222222;
+	fontSize: 25px;
+	fontWeight: bold;
+}
+
+mx|Button
+{
+	themeColor: #A2FF00;
+	
+}
+mx|List
+{
+	selectionColor: #A2FF00;
+	rollOverColor: #DCFF9E;
+}
+
+mx|DataGrid
+{
+	selectionColor: #A2FF00;
+	rollOverColor: #DCFF9E;
+}
+
+mx|TextInput
+{
+}
+
+mx|Tree
+{
+	folderClosedIcon: Embed(source="assets/bullet_green.png");
+	folderOpenIcon: Embed(source="assets/bullet_green.png");
+	defaultLeafIcon: Embed(source="assets/bullet_black.png");
+}

@@ -1,6 +1,6 @@
 package nl.aboutcoding.servicebrowser.business
 {
-	import com.adobe.serialization.json.JSON;
+	//import com.adobe.serialization.json.JSON;
 	
 	import mx.collections.ArrayCollection;
 	import mx.controls.Alert;
@@ -57,7 +57,11 @@ package nl.aboutcoding.servicebrowser.business
 			
 			proxy = new RemoteObject();
 			proxy.endpoint = profile.url;
-			proxy.destination = profile.serviceDest;			
+			proxy.destination = profile.serviceDest;
+			
+			if(profile.useCredentials)
+				proxy.setCredentials(profile.user, profile.password);
+			
 			proxy.showBusyCursor = true;
 			eventHub.dispatchEvent( new StatusChangeEvent( StatusChangeEvent.CONNECTED ) );
 		}
@@ -75,10 +79,10 @@ package nl.aboutcoding.servicebrowser.business
 			var args:Array = new Array();
 			for each( var arg:RArgument in method.arguments ) 
 			{
-				if( ( arg.value.charAt(0) == '{' ) && ( arg.value.charAt( arg.value.length-1)  == '}' ) )
+				if( arg.useJSON)
 				{
 					try {
-						args.push( JSON.decode( arg.value ) );
+						args.push( JSON.parse( arg.value ) );
 					} catch( e:Error ) {
 						Alert.show("Invalid JSON string: '"+arg.value+"'", "Error");
 					}

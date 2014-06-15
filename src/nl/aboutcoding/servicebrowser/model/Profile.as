@@ -10,6 +10,8 @@ package nl.aboutcoding.servicebrowser.model
 		[Bindable]
 		public var url:String = "http://localhost/";
 		[Bindable]
+		public var useCredentials:Boolean = false;
+		[Bindable]
 		public var user:String = "admin";
 		[Bindable]
 		public var password:String;

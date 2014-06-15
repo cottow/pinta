@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<mx:Panel height="282" layout="absolute" xmlns:mx="http://www.adobe.com/2006/mxml" 
+<mx:Panel height="282" layout="absolute" 
+		  xmlns:mx="http://www.adobe.com/2006/mxml" 
+		  xmlns:s="library://ns.adobe.com/flex/spark"
 	title="Gateways" 
 	styleName="lightTitle" 
 	width="638" 
@@ -18,32 +20,45 @@
 	</mx:List>
 	<mx:Button x="10" y="210" label="" icon="@Embed(source='assets/add.png')" fontWeight="bold" click="onAddClick(event)"/>
 	<mx:Button x="58" y="210" label="" icon="@Embed(source='assets/delete.png')" fontWeight="bold" click="onDeleteClick(event)" enabled="{profileList.selectedIndex >= 0 }"/>
-
+	<mx:Button x="106" y="210" label="" icon="@Embed(source='assets/loadsetting.png')" 
+			   toolTip="Load profile from file..."
+			   fontWeight="bold" click="onLoadSettingClick(event)"/>
+	
 	<mx:Canvas id="formCanvas" x="180" y="10" enabled="{selectedProfile!=null}" width="404">
 		<mx:TextInput x="85" y="0" id="nameText" change="selectedProfile.name = nameText.text;" text="{selectedProfile.name}"/>
 		<mx:TextInput x="85" y="41" width="309" id="urlText" change="selectedProfile.url = urlText.text;" text="{selectedProfile.url}"/>
-		<mx:TextInput x="85" y="71" id="userText" change="selectedProfile.user = userText.text;" text="{selectedProfile.user}" enabled="false"/>
-		<mx:TextInput x="85" y="125" visible="false"  id="destText" change="selectedProfile.serviceDest = destText.text;" text="{selectedProfile.serviceDest}"/>
-		<mx:TextInput x="85" y="97" id="passwordText" change="selectedProfile.password = passwordText.text;" text="{selectedProfile.password}" displayAsPassword="true" enabled="false"/>
-		<mx:Label x="25" y="2" text="Name" fontWeight="bold"/>
-		<mx:Label x="35" y="43" text="URL"/>
-		<mx:Label x="0" y="73" text="Username"/>
-		<mx:Label x="6" y="99" text="Password"/>
-		<mx:Label x="6" y="129" visible="false" text="Destination"/>
+		<mx:TextInput x="85" y="108" id="userText" 
+					  change="selectedProfile.user = userText.text;" 
+					  text="{selectedProfile.user}"
+					  enabled="{useCredentialCheckBox.selected}"/>
+		<!--<mx:TextInput x="85" y="125" visible="false"  id="destText" change="selectedProfile.serviceDest = destText.text;" text="{selectedProfile.serviceDest}"/>-->
+		<mx:TextInput x="85" y="138" id="passwordText" 
+					  change="selectedProfile.password = passwordText.text;" 
+					  text="{selectedProfile.password}" 
+					  displayAsPassword="true"
+					  enabled="{useCredentialCheckBox.selected}"/>
+		<mx:Label x="5" y="5" text="Name" fontWeight="bold"/>
+		<mx:Label x="5" y="45" text="URL" fontWeight="bold"/>
+		
+		<s:CheckBox id="useCredentialCheckBox" label="Use Credentials" x="5" y="85" fontWeight="bold"
+					selected="@{selectedProfile.useCredentials}"/>
+		
+		<mx:Label x="15" y="110" text="Username" enabled="{useCredentialCheckBox.selected}"/>
+		<mx:Label x="15" y="140" text="Password" enabled="{useCredentialCheckBox.selected}"/>
+		<!--<mx:Label x="10" y="159" visible="false" text="Destination"/>-->
 		<mx:Button x="238" y="190" label="Use" click="onConnectClick(event)" enabled="{profileList.selectedIndex >= 0 }" icon="@Embed(source='../../../../assets/connect.png')"/>
 	</mx:Canvas>
 	<mx:Button x="530" y="200" label="Quit" icon="@Embed(source='../../../../assets/stop.png')" click="onQuitClick(event)"/>
 	
 	<mx:Script>
 		<![CDATA[
-			import nl.aboutcoding.servicebrowser.events.StatusChangeEvent;
-			import nl.aboutcoding.servicebrowser.controller.EventHub;
-			import nl.aboutcoding.servicebrowser.model.ServiceInfo;
-			import mx.utils.ObjectUtil;
 			import mx.controls.Alert;
-			import nl.aboutcoding.servicebrowser.model.Profile;
 			import mx.events.ListEvent;
+			
 			import nl.aboutcoding.servicebrowser.controller.ConnectController;
+			import nl.aboutcoding.servicebrowser.controller.EventHub;
+			import nl.aboutcoding.servicebrowser.events.StatusChangeEvent;
+			import nl.aboutcoding.servicebrowser.model.Profile;
 			
 			[Bindable]
 			private var controller:ConnectController;
@@ -54,7 +69,7 @@
 			
 			private function init():void
 			{
-				controller = new ConnectController();
+				controller = ConnectController.getInstance();
 			}
 			
 			private function onAddClick( event:MouseEvent ):void
@@ -68,6 +83,18 @@
 			{
 				if( profileList.selectedIndex >= 0 )
 					controller.deleteProfile( profileList.selectedIndex );
+			}
+			
+			private function onLoadSettingClick( event:MouseEvent ):void
+			{
+				var file:File = new File();
+				file.addEventListener(Event.SELECT, onSettingFileSelect);
+				file.browseForOpen("Please select a file...");
+			}
+			
+			private function onSettingFileSelect(evt:Event):void {
+				var file:File = File(evt.currentTarget);
+				controller.loadProfiles(file);					
 			}
 			
 			private function onProfileSelect( event:ListEvent ):void
